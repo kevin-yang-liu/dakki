@@ -81,6 +81,10 @@ body {
   text-shadow: 2px 2px 0 #fff1b0;
 }
 
+.hero h2 {
+  margin-top: -6px;
+}
+
 .hero-logo {
   width: 0.8em;
   height: 0.8em;
@@ -89,6 +93,15 @@ body {
 }
 
 .hero-title-main {
+  color: var(--ink);
+}
+
+.hero-title-pronunciation {
+  font-size: 0.45em;
+  font-weight: 600;
+  font-family: "Baloo 2", "Trebuchet MS", "Arial", sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color: var(--ink);
 }
 
@@ -217,6 +230,12 @@ select {
   background: var(--input);
   color: var(--ink);
   box-shadow: 0 3px 0 rgba(29, 20, 7, 0.18);
+  line-height: 1.2;
+  height: 44px;
+}
+
+#interested-in::placeholder {
+  color: var(--muted);
 }
 
 .character-slider {
@@ -229,6 +248,10 @@ select {
   margin-top: 6px;
   font-size: 0.85rem;
   color: var(--ink);
+}
+
+#banner-link {
+  margin-top: -29px;
 }
 
 input:disabled {
@@ -469,7 +492,7 @@ small {
 }
 
 .resume-title h2 {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   margin: 0 0 4px;
   font-weight: 700;
   font-family: "Bungee", "Baloo 2", sans-serif;

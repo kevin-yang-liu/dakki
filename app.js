@@ -63,6 +63,12 @@ const fields = {
     preview: document.getElementById("preview-zodiac"),
     fallback: "Zodiac",
   },
+  interestedIn: {
+    input: document.getElementById("interested-in"),
+    preview: document.getElementById("preview-interested-in"),
+    fallback: "",
+    formatter: (value) => (value ? `Interested in ${value}` : "Interested in"),
+  },
 };
 
 const listFields = {
@@ -114,6 +120,7 @@ const githubInput = document.getElementById("github");
 const websiteInput = document.getElementById("website");
 const instagramInput = document.getElementById("instagram");
 const randomizeButton = document.getElementById("randomize-profile");
+const interestedInInput = document.getElementById("interested-in");
 
 let relationshipCounter = 0;
 let hasUserUploadedPhoto = false;
@@ -365,17 +372,8 @@ const formatRoleType = (type) => {
   if (type === "polygamous") {
     return "Polygamous relationship";
   }
-  if (type === "sneaky") {
-    return "Sneaky link";
-  }
   if (type === "eyecontactship") {
     return "Eyecontactship";
-  }
-  if (type === "emotional") {
-    return "Emotional situationship";
-  }
-  if (type === "bestfriend") {
-    return "Neighbour";
   }
   return type.charAt(0).toUpperCase() + type.slice(1);
 };
@@ -399,12 +397,9 @@ const createRoleCard = (relationshipId, roleNumber) => {
         <option value="relationship">Relationship</option>
         <option value="coparent">Co-parent</option>
         <option value="polygamous">Polygamous relationship</option>
-        <option value="sneaky">Sneaky link</option>
         <option value="eyecontactship">Eyecontactship</option>
-        <option value="emotional">Emotional situationship</option>
         <option value="marriage">Marriage</option>
         <option value="other">Talking stage</option>
-        <option value="bestfriend">Neighbour</option>
       </select>
     </div>
     <div class="field-group">
@@ -484,11 +479,11 @@ const updateRelationshipCardId = (card, nextId) => {
     const options = getPersonOptions(nextId);
     const normalized = selected
       ? normalizePersonSelection(selected, nextId)
-      : options[2];
+      : options[0];
     personInput.innerHTML = options
       .map((option) => `<option value="${option}">${option}</option>`)
       .join("");
-    personInput.value = options.includes(normalized) ? normalized : options[2];
+    personInput.value = options.includes(normalized) ? normalized : options[0];
   }
 };
 
@@ -926,7 +921,7 @@ const updateFields = () => {
 
 const updateDocumentTitles = () => {
   const name = fields.name.input.value.trim();
-  const title = name ? `${name}'s Dating Profile` : "Your Dating Profile";
+  const title = "Dakki";
   document.title = title;
   const pdfTitle = document.getElementById("pdf-title");
   if (pdfTitle) {
@@ -973,7 +968,7 @@ const nameData = {
 };
 
 const profileData = {
-  pronouns: ["she/her", "he/him", "they/them", "she/they", "he/they", "ze/zer"],
+  pronouns: ["she/her", "he/him", "they/them", "she/they", "he/they"],
   cities: [
     "New York",
     "London",
@@ -1007,7 +1002,7 @@ const profileData = {
     "Auckland",
   ],
   zodiacs: ["Aquarius", "Leo", "Libra", "Sagittarius", "Taurus", "Gemini", "Virgo", "Scorpio"],
-  heights: ["5'4\" or 163 cm", "5'8\" or 173 cm", "5'10\" or 178 cm", "6'0\" or 183 cm"],
+  heights: ["5'4\"", "5'8\"", "5'10\"", "6'0\""],
   education: [
     "BA Literature @ Boston University",
     "BSc Computer Science @ Western University",
@@ -1089,7 +1084,7 @@ const randomMonthYear = (yearStart, yearEnd) => {
 
 const buildUsername = (name) => name.toLowerCase().replace(/\s+/g, "");
 
-const PERSON_BASE_OPTIONS = ["woman", "man", "nonbinary person"];
+const PERSON_BASE_OPTIONS = ["man", "woman", "nonbinary person"];
 
 const getPersonLabel = (prefix, base) => `${prefix} ${base}`;
 
@@ -1125,8 +1120,8 @@ const setCardData = (card, data) => {
     const options = getPersonOptions(relationshipId);
     const nextValue = data.person
       ? normalizePersonSelection(data.person, relationshipId)
-      : options[2];
-    personInput.value = options.includes(nextValue) ? nextValue : options[2];
+      : options[0];
+    personInput.value = options.includes(nextValue) ? nextValue : options[0];
   }
 
   appUsedInput.checked = data.appUsed;
@@ -1198,6 +1193,9 @@ const randomizeProfile = () => {
   fields.height.input.value = randomItem(profileData.heights);
   fields.zodiac.input.value = randomItem(profileData.zodiacs);
   fields.education.input.value = randomItem(profileData.education);
+  if (interestedInInput) {
+    interestedInInput.value = randomItem(["men", "women", "nonbinary people"]);
+  }
 
   linkedinInput.value = `${username}-${randomInt(1, 99)}`;
   githubInput.value = username;
@@ -1235,10 +1233,7 @@ const randomizeProfile = () => {
           "other",
           "coparent",
           "polygamous",
-          "sneaky",
           "eyecontactship",
-          "emotional",
-          "bestfriend",
         ]),
         start: randomMonthYear(startYear, startYear),
         end: endYear ? `${randomItem(monthNames)} ${endYear}` : "Present",
@@ -1412,6 +1407,7 @@ const buildProfilePayload = () => ({
     height: fields.height.input.value.trim(),
     education: fields.education.input.value.trim(),
     zodiac: fields.zodiac.input.value.trim(),
+    interestedIn: interestedInInput?.value.trim() || "",
   },
   links: {
     linkedin: linkedinInput.value.trim(),
@@ -1442,6 +1438,9 @@ const applyProfilePayload = (payload) => {
   fields.height.input.value = payload.fields?.height || "";
   fields.education.input.value = payload.fields?.education || "";
   fields.zodiac.input.value = payload.fields?.zodiac || "";
+  if (interestedInInput) {
+    interestedInInput.value = payload.fields?.interestedIn || "men";
+  }
 
   linkedinInput.value = payload.links?.linkedin || "";
   githubInput.value = payload.links?.github || "";
