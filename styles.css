@@ -234,6 +234,10 @@ select {
   height: 44px;
 }
 
+input.is-default-value {
+  color: var(--muted);
+}
+
 #interested-in::placeholder {
   color: var(--muted);
 }

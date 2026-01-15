@@ -345,6 +345,21 @@ const formatMonths = (months) => {
   return `${yearLabel} ${monthLabel}`;
 };
 
+const ROLE_TYPE_DEFAULT = "relationship";
+const ROLE_OTHER_DEFAULT = "Complicated relationship";
+const ROLE_TYPE_OPTIONS = new Set(["marriage", "cohabitation", "relationship", "talking", "other"]);
+
+const normalizeRoleType = (type) => {
+  const normalized = (type || "").toLowerCase().trim();
+  if (normalized === "coparent" || normalized === "polygamous" || normalized === "eyecontactship") {
+    return "relationship";
+  }
+  if (ROLE_TYPE_OPTIONS.has(normalized)) {
+    return normalized;
+  }
+  return ROLE_TYPE_DEFAULT;
+};
+
 const getRelationshipType = (roles) => {
   const types = roles.map((role) => role.type).filter(Boolean);
   if (types.includes("marriage")) {
@@ -359,27 +374,54 @@ const getRelationshipType = (roles) => {
   return "relationship";
 };
 
-const formatRoleType = (type) => {
+const formatRoleType = (type, typeOther = "") => {
   if (!type) {
-    return "Relationship";
+    return ROLE_OTHER_DEFAULT;
   }
   if (type === "other") {
-    return "Talking stage";
+    return typeOther || "Other";
   }
-  if (type === "coparent") {
-    return "Co-parent";
+  if (type === "talking") {
+    return "Talking Stage";
   }
-  if (type === "polygamous") {
-    return "Polygamous relationship";
+  if (type === "cohabitation") {
+    return "Cohabilitation";
   }
-  if (type === "eyecontactship") {
-    return "Eyecontactship";
+  if (type === "relationship") {
+    return "Relationship";
+  }
+  if (type === "marriage") {
+    return "Marriage";
   }
   return type.charAt(0).toUpperCase() + type.slice(1);
 };
 
 const getSentenceType = (type) => {
   return type === "marriage" ? "marriage" : "relationship";
+};
+
+const updateRoleTypeField = (roleCard) => {
+  const typeSelect = roleCard.querySelector('[data-role-field="type"]');
+  const otherField = roleCard.querySelector("[data-role-other]");
+  const otherInput = roleCard.querySelector('[data-role-field="typeOther"]');
+  if (!typeSelect || !otherField || !otherInput) {
+    return;
+  }
+  let nextValue = normalizeRoleType(typeSelect.value);
+  if (typeSelect.value !== nextValue) {
+    typeSelect.value = nextValue;
+  }
+  if (nextValue === "other") {
+    otherField.classList.remove("is-hidden");
+    if (!otherInput.value.trim()) {
+      otherInput.value = ROLE_OTHER_DEFAULT;
+    }
+  } else {
+    otherField.classList.add("is-hidden");
+  }
+  const isDefaultOther =
+    nextValue === "other" && otherInput.value.trim() === ROLE_OTHER_DEFAULT;
+  otherInput.classList.toggle("is-default-value", isDefaultOther);
 };
 
 const createRoleCard = (relationshipId, roleNumber) => {
@@ -394,13 +436,16 @@ const createRoleCard = (relationshipId, roleNumber) => {
     <div class="field">
       <label>Stage</label>
       <select data-role-field="type">
-        <option value="relationship">Relationship</option>
-        <option value="coparent">Co-parent</option>
-        <option value="polygamous">Polygamous relationship</option>
-        <option value="eyecontactship">Eyecontactship</option>
         <option value="marriage">Marriage</option>
-        <option value="other">Talking stage</option>
+        <option value="cohabitation">Cohabilitation</option>
+        <option value="relationship" selected>Relationship</option>
+        <option value="talking">Talking Stage</option>
+        <option value="other">Other</option>
       </select>
+    </div>
+    <div class="field" data-role-other>
+      <label>Other stage</label>
+      <input type="text" data-role-field="typeOther" value="${ROLE_OTHER_DEFAULT}" />
     </div>
     <div class="field-group">
       <div class="field">
@@ -427,6 +472,7 @@ const createRoleCard = (relationshipId, roleNumber) => {
       </div>
     </div>
   `;
+  updateRoleTypeField(role);
   return role;
 };
 
@@ -560,8 +606,10 @@ const getRelationshipData = () => {
 
     const roles = Array.from(card.querySelectorAll(".role-card")).map((role) => {
       const getRoleValue = (selector) => role.querySelector(selector)?.value.trim() || "";
+      const type = normalizeRoleType(getRoleValue('[data-role-field="type"]'));
       return {
-        type: getRoleValue('[data-role-field="type"]'),
+        type,
+        typeOther: type === "other" ? getRoleValue('[data-role-field="typeOther"]') : "",
         start: getRoleValue('[data-role-field="start"]'),
         end: getRoleValue('[data-role-field="end"]'),
         summary: getRoleValue('[data-role-field="summary"]'),
@@ -764,7 +812,10 @@ const renderExperiencePreview = () => {
     let appLine = "";
     if (item.appUsed) {
       if (item.appName === "Other") {
-        appLine = `Dating app helped me land this ${sentenceType}`;
+        const otherName = (item.appOther || "").trim();
+        appLine = otherName
+          ? `${otherName} helped me land this ${sentenceType}`
+          : `Dating app helped me land this ${sentenceType}`;
       } else {
         const appName = item.appName;
         appLine = appName
@@ -781,7 +832,7 @@ const renderExperiencePreview = () => {
         const locationLine = role.remote ? "Remote" : role.location;
         return `
           <div class="preview-role-item">
-            <div class="preview-role-title">${formatRoleType(role.type)}</div>
+            <div class="preview-role-title">${formatRoleType(role.type, role.typeOther)}</div>
             <div class="preview-role-meta">${dateLine}</div>
             ${locationLine ? `<div class="preview-role-meta">${locationLine}</div>` : ""}
             ${role.summary ? `<div class="experience-summary">${role.summary}</div>` : ""}
@@ -1148,7 +1199,17 @@ const setCardData = (card, data) => {
   data.roles.forEach((role, index) => {
     const roleCard = createRoleCard(card.dataset.relationshipId, index + 1);
     roleList.appendChild(roleCard);
-    roleCard.querySelector('[data-role-field="type"]').value = role.type;
+    const hasTypeOther = Object.prototype.hasOwnProperty.call(role, "typeOther");
+    let roleType = normalizeRoleType(role.type);
+    if (roleType === "other" && !hasTypeOther) {
+      roleType = "talking";
+    }
+    roleCard.querySelector('[data-role-field="type"]').value = roleType;
+    const roleTypeOther = roleCard.querySelector('[data-role-field="typeOther"]');
+    if (roleTypeOther) {
+      roleTypeOther.value = role.typeOther || "";
+    }
+    updateRoleTypeField(roleCard);
     roleCard.querySelector('[data-role-field="start"]').value = role.start;
     roleCard.querySelector('[data-role-field="end"]').value = role.end;
     roleCard.querySelector('[data-role-field="summary"]').value = role.summary;
@@ -1226,15 +1287,10 @@ const randomizeProfile = () => {
     const roles = Array.from({ length: rolesCount }, () => {
       const startYear = randomInt(2017, 2022);
       const endYear = randomBool(0.3) ? "" : String(randomInt(startYear + 1, 2024));
+      const type = randomItem(["marriage", "cohabitation", "relationship", "talking", "other"]);
       return {
-        type: randomItem([
-          "relationship",
-          "marriage",
-          "other",
-          "coparent",
-          "polygamous",
-          "eyecontactship",
-        ]),
+        type,
+        typeOther: type === "other" ? ROLE_OTHER_DEFAULT : "",
         start: randomMonthYear(startYear, startYear),
         end: endYear ? `${randomItem(monthNames)} ${endYear}` : "Present",
         summary: randomItem(profileData.roleSummaries),
@@ -1676,6 +1732,12 @@ experienceList.addEventListener("input", (event) => {
       appOther.value = "";
     }
   }
+  if (event.target.matches('[data-role-field="typeOther"]')) {
+    const role = event.target.closest(".role-card");
+    if (role) {
+      updateRoleTypeField(role);
+    }
+  }
   updateFields();
 });
 
@@ -1703,6 +1765,17 @@ experienceList.addEventListener("change", (event) => {
       locationInput.value = "";
     } else {
       locationField.classList.remove("is-hidden");
+    }
+  }
+
+  if (event.target.matches('[data-role-field="type"]')) {
+    const role = event.target.closest(".role-card");
+    if (role) {
+      updateRoleTypeField(role);
+    }
+    const card = event.target.closest(".experience-card");
+    if (card) {
+      updateAppLabel(card);
     }
   }
 
