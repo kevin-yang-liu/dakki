@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Dating Resume</title>
+    <link rel="icon" href="hinge-logo.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700&family=Bungee&display=swap"
+      rel="stylesheet"
+    />
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow"></p>
+          <h1><span class="hero-title-main">Duckfolio</span></h1><h2>
+            your love life deserves a portfolio.
+            
+            <br>turn your exes into a growth portfolio.</h2>
+
+          <p class="subhead">
+            1. Fill your profile (or click Randomize Inputs)
+            <br> 2. Scroll down and click Download PDF or get a shareable link
+            <br> 3. Now you have a customized Duckfolio. For free.
+          </p>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="panel form-panel">
+          <div class="form-scroll">
+            <div class="panel-header">
+              <h2>Fill your profile</h2>
+              <button type="button" id="randomize-profile" class="btn-outline">Randomize Inputs</button>
+            </div>
+            <p class="panel-note is-hidden" id="randomize-note">
+              All randomized duckfolios are not real info!
+            </p>
+            <p class="panel-note">Everything updates live as you type</p>
+
+          <div class="field">
+            <label for="photo">Profile character</label>
+            <input type="range" id="photo" class="character-slider" min="0" max="0" step="1" />
+            <div class="character-label" id="photo-label">Duck</div>
+          </div>
+
+          <div class="field-group two-col">
+            <div class="field">
+              <label for="name">Name</label>
+              <input id="name" type="text" placeholder="Jane Doe" />
+            </div>
+            <div class="field">
+              <label for="pronouns">Pronouns</label>
+              <input id="pronouns" type="text" placeholder="she/her" />
+            </div>
+          </div>
+
+          <div class="field-group two-col">
+            <div class="field">
+              <label for="location">Location</label>
+              <input id="location" type="text" placeholder="Downtown Toronto" />
+            </div>
+            <div class="field">
+              <label for="distance">Distance (km)</label>
+              <input id="distance" type="number" min="0" placeholder="10" />
+            </div>
+          </div>
+
+          <div class="field-group two-col">
+            <div class="field">
+              <label for="experience-years">Years of exp.</label>
+              <input id="experience-years" type="number" min="0" placeholder="3" />
+              <small aria-hidden="true">&nbsp;</small>
+            </div>
+            <div class="field">
+              <label for="linkedin">LinkedIn (username)</label>
+              <input id="linkedin" type="text" placeholder="jane-doe" />
+              <small>linkedin.com/in/</small>
+            </div>
+          </div>
+
+          <div class="field-group two-col">
+            <div class="field">
+              <label for="github">GitHub (username)</label>
+              <input id="github" type="text" placeholder="janedoe" />
+              <small>github.com/</small>
+            </div>
+            <div class="field">
+              <label for="website">Portfolio (domain)</label>
+              <input id="website" type="text" placeholder="janedoe.com" />
+              <small>https://</small>
+            </div>
+          </div>
+
+          <div class="field-group two-col">
+            <div class="field">
+              <label for="instagram">Instagram (username)</label>
+              <input id="instagram" type="text" placeholder="janedoe" />
+              <small>instagram.com/</small>
+            </div>
+            <div class="field">
+              <label for="zodiac">Zodiac sign</label>
+              <input id="zodiac" type="text" placeholder="Aquarius" />
+              <small aria-hidden="true">&nbsp;</small>
+            </div>
+          </div>
+
+          <div class="field-group two-col">
+            <div class="field">
+              <label for="banner-link">Banner link</label>
+              <select id="banner-link">
+                <option value="linkedin">LinkedIn</option>
+                <option value="github">GitHub</option>
+                <option value="website">Portfolio</option>
+                <option value="instagram">Instagram</option>
+              </select>
+            </div>
+            <div class="field">
+              <small aria-hidden="true">&nbsp;</small>
+            </div>
+          </div>
+
+          <div class="field-group two-col">
+            <div class="field">
+              <label for="age">Age</label>
+              <input id="age" type="text" placeholder="25" />
+            </div>
+            <div class="field">
+              <label for="height">Height</label>
+              <input id="height" type="text" placeholder="5'7 or 170 cm" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Dating experience</label>
+            <small>Add from first relationship to most recent</small>
+            <div class="experience-controls">
+              <button type="button" id="add-experience" class="btn-outline">Add relationship</button>
+            </div>
+            <div id="experience-list" class="experience-list"></div>
+          </div>
+
+          <div class="field">
+            <label for="skills">Your skills</label>
+            <input id="skills" type="text" placeholder="Great cook, good listener, Python, machine learning" />
+          </div>
+
+          <div class="field">
+            <label for="songs">Favorite songs (comma separated)</label>
+            <input id="songs" type="text" placeholder="Sofia, Motion Sickness, Golden Hour" />
+          </div>
+
+          <div class="field">
+            <label for="artists">Favorite artists (comma separated)</label>
+            <input id="artists" type="text" placeholder="Clairo, Frank Ocean, Lorde" />
+          </div>
+
+          <div class="field">
+            <label for="education">Education</label>
+            <input id="education" type="text" placeholder="BSc @ Univesity" />
+          </div>
+
+          <div class="form-actions">
+            <button type="button" id="download-pdf" class="btn-primary is-hidden" disabled>Download Profile</button>
+          </div>
+            <div class="form-actions form-actions-secondary">
+              <button type="button" id="share-linkedin" class="btn-outline">Share to LinkedIn</button>
+              <p class="share-note is-hidden" id="share-linkedin-note">
+                Woah, you're a brave one. Letting your whole LinkedIn network know that you're open to work and date!
+              </p>
+            </div>
+            <p class="panel-note panel-contact">For inquiries email hingedin-app@gmail.com</p>
+          </div>
+        </section>
+
+        <section class="panel preview-panel">
+          <div class="preview-header">
+            <button type="button" id="randomize-resume" class="btn-outline">Randomize Profile</button>
+          </div>
+          <div class="resume-scroll" id="resume-stage">
+            <div class="resume" id="resume">
+            <div class="pdf-title" id="pdf-title">Your Dating Resume</div>
+            <div class="cover">
+              <div class="cover-content">
+                <div class="cover-name" id="cover-name">Your Name</div>
+                <div class="cover-link" id="cover-link">linkedin.com/in/yourname</div>
+              </div>
+            </div>
+            <div class="resume-top">
+              <div class="avatar" id="avatar">
+                <img src="character-assets/duck.png" alt="Profile character" />
+              </div>
+              <div class="resume-title">
+                <h2>
+                  <span id="preview-name">Your Name </span>
+                  <span id="preview-pronouns" class="pronouns is-hidden"></span>
+                </h2>
+                <div class="meta">
+                  <span id="preview-relationship-summary" class="relationship-summary">Married @ N/A | Prev @ N/A</span>
+                </div>
+                <div class="meta stats-line">
+                  <span id="preview-location">Location</span>
+                  <span id="preview-distance" class="is-hidden"></span>
+                </div>
+                <div class="meta stats-line">
+                  <span id="preview-level">Junior dater with 0 years of experience</span>
+                </div>
+                <div class="meta stats-line">
+                  <span id="preview-age">Age</span>
+                  <span id="preview-height">Height</span>
+                  <span id="preview-zodiac">Zodiac</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-links">
+              <div class="links-row" id="preview-links-primary"></div>
+              <div class="links-row" id="preview-links-secondary"></div>
+            </div>
+
+            <div class="resume-grid">
+              <div class="resume-block">
+                <h3>Dating Experience</h3>
+                <div id="preview-relationship-experience" class="experience-feed"></div>
+              </div>
+
+              <div class="resume-block compact-block">
+                <h3>Skills</h3>
+                <div id="preview-skills" class="chip-wrap"></div>
+              </div>
+
+              <div class="resume-block compact-block">
+                <div class="music-grid">
+                  <div>
+                    <h3>Top Songs</h3>
+                    <div id="preview-songs" class="chip-wrap"></div>
+                  </div>
+                  <div>
+                    <h3>Top Artists</h3>
+                    <div id="preview-artists" class="chip-wrap"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="resume-block compact-block">
+                <h3>Education</h3>
+                <p id="preview-education"></p>
+              </div>
+            </div>
+            </div>
+          </div>
+          <div class="preview-actions">
+            <button type="button" id="get-share-link" class="btn-outline btn-filled">Get shareable link</button>
+            <button type="button" id="download-pdf-preview" class="btn-primary">Download Profile</button>
+          </div>
+          <p class="share-warning is-hidden" id="share-link-error">
+            Error: only profiles with no uploaded photos can have shareable links. You can still download the profile though.
+          </p>
+          <div class="share-link is-hidden" id="share-link">
+            <label for="share-url">Shareable link</label>
+            <div class="share-link-row">
+              <input id="share-url" type="text" readonly />
+              <button type="button" id="copy-share-url" class="btn-outline">Copy link</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
