@@ -120,6 +120,9 @@ let relationshipCounter = 0;
 let hasUserUploadedPhoto = false;
 let randomizeNoteDismissed = false;
 let predictionValue = "";
+let predictionTimers = [];
+let predictionInProgress = false;
+let predictionSuppress = false;
 
 const monthMap = {
   jan: 0,
@@ -1234,12 +1237,19 @@ const buildPredictionText = () => {
     `going viral on a dating app and landing a serious relationship with a new ${context.interestedLabel}`,
     `deciding to go no-contact, then bumping into ${primaryPast} at a wedding`,
     `unlocking a slow-burn romance with ${secondaryPast} after months of "just friends"`,
-    `accidentally dating two people and choosing ${primaryPast} for real`,
+    `choosing ${primaryPast} for real after a messy almost-thing`,
     `getting engaged to a new ${context.interestedLabel} after a chaotic group trip`,
+    `finding a new ${context.interestedLabel} who feels like home and moving in together`,
+    `meeting a long-distance ${context.interestedLabel} who makes the distance feel easy`,
+    `dating a new ${context.interestedLabel} and meeting each other's families by winter`,
+    `landing a joyful, steady relationship with ${secondaryPast} that turns into marriage`,
+    `rekindling with ${primaryPast} and becoming each other's favorite person`,
+    `meeting a new ${context.interestedLabel} through a hobby and calling it official fast`,
+    `finding your forever ${context.interestedLabel} after a tiny DM that changes everything`,
   ];
 
   const flavorAdds = [
-    "after a bold hinge swipe.",
+    "after a bold app swipe.",
     "once you stop replying in 3-day batches.",
     "when your top song becomes your couple song.",
     "after a random coffee run turns into a date.",
@@ -1248,6 +1258,9 @@ const buildPredictionText = () => {
     "because you finally leave the house on a weeknight.",
     "right after you delete and re-download a dating app.",
     "the moment you decide to be direct about what you want.",
+    "after a low-key hangout becomes a weekly ritual.",
+    "when you say yes to a last-minute invite.",
+    "once you start matching energy instead of overthinking.",
   ];
 
   const outcome = pickFromList(coreOutcomes, seed);
@@ -1258,7 +1271,9 @@ const buildPredictionText = () => {
       ? "Big energy forecast:"
       : "Soft launch forecast:";
 
-  return `${intensityTag} By the end of 2026, you're ${outcome} ${flavor}`;
+  const sentence = `${intensityTag} By the end of 2026, you're ${outcome} ${flavor}`;
+  const withoutPeriod = sentence.replace(/\.\s*$/, "");
+  return `${withoutPeriod} 🎉`;
 };
 
 const setCardData = (card, data) => {
@@ -1498,9 +1513,13 @@ const resetPredictionPanel = () => {
   if (!predictionPanel || !predictionText) {
     return;
   }
+  predictionTimers.forEach((timer) => clearTimeout(timer));
+  predictionTimers = [];
   predictionPanel.classList.add("is-hidden");
   predictionText.textContent = "";
   predictionValue = "";
+  predictionInProgress = false;
+  predictionSuppress = false;
   if (resumePredictionBlock && resumePredictionText) {
     resumePredictionBlock.classList.add("is-hidden");
     resumePredictionText.textContent = "";
@@ -1526,6 +1545,89 @@ const updatePredictionDisplay = () => {
     resumePredictionBlock.classList.remove("is-hidden");
     resumePredictionText.textContent = predictionValue;
   }
+};
+
+const updateShareLinkIfVisible = () => {
+  if (!shareLinkWrap || shareLinkWrap.classList.contains("is-hidden")) {
+    return;
+  }
+  revealShareLink();
+};
+
+const suppressPredictionDisplay = () => {
+  if (!predictionPanel || !predictionText || !predictionInProgress) {
+    return;
+  }
+  predictionSuppress = true;
+  predictionPanel.classList.add("is-hidden");
+  predictionText.textContent = "";
+};
+
+const runPredictionSequence = () => {
+  if (!predictionPanel || !predictionText) {
+    return;
+  }
+  resetPredictionPanel();
+  predictionInProgress = true;
+  resetShareLink();
+  if (getShareLinkButton) {
+    getShareLinkButton.classList.add("is-hidden");
+    getShareLinkButton.disabled = true;
+  }
+  if (downloadButtonPreview) {
+    downloadButtonPreview.classList.add("is-hidden");
+    downloadButtonPreview.disabled = true;
+  }
+  predictionPanel.classList.remove("is-hidden");
+  const context = getPredictionContext();
+  const seed = hashString(JSON.stringify(context));
+  const loadingPool = [
+    "Warming up the duck-powered neural net...",
+    "Consulting the zodiac API (and a magic 8-ball)...",
+    "Compiling your love story into bytecode...",
+    "Running sentiment analysis on your playlist...",
+    "Cross-referencing your vibe with cosmic weather...",
+    "Simulating a meet-cute in 4D...",
+    "Decrypting your soft-launch signals...",
+    "Asking the group chat for wisdom...",
+    "Negotiating with Cupid's scheduler...",
+    "Bootstrapping a relationship forecast model...",
+  ];
+
+  const messages = [];
+  let seedOffset = 0;
+  while (messages.length < 3) {
+    const message = pickFromList(loadingPool, seed + seedOffset);
+    if (!messages.includes(message)) {
+      messages.push(message);
+    }
+    seedOffset += 3;
+  }
+
+  const delayMs = 2000;
+  messages.forEach((message, index) => {
+    predictionTimers.push(
+      window.setTimeout(() => {
+        predictionText.textContent = message;
+      }, index * delayMs)
+    );
+  });
+
+  predictionTimers.push(
+    window.setTimeout(() => {
+      predictionValue = buildPredictionText();
+      predictionInProgress = false;
+      updatePredictionDisplay();
+      if (getShareLinkButton) {
+        getShareLinkButton.classList.remove("is-hidden");
+        getShareLinkButton.disabled = false;
+      }
+      if (downloadButtonPreview) {
+        downloadButtonPreview.classList.remove("is-hidden");
+        downloadButtonPreview.disabled = false;
+      }
+    }, messages.length * delayMs)
+  );
 };
 
 const updatePhotoHint = () => {
@@ -1887,6 +1989,7 @@ if (shareLinkedInButton) {
 
 if (getShareLinkButton) {
   getShareLinkButton.addEventListener("click", () => {
+    suppressPredictionDisplay();
     removeUploadedPhotoForShare();
     setShareLinkErrorVisible(false);
     const url = revealShareLink();
@@ -1923,8 +2026,7 @@ if (predictButton) {
       return;
     }
     updateFields();
-    predictionValue = buildPredictionText();
-    updatePredictionDisplay();
+    runPredictionSequence();
     predictionPanel.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 }
@@ -2074,26 +2176,26 @@ updateFields();
 const handleDownload = () => {
   if (isInAppBrowser()) {
     removeUploadedPhotoForShare();
-    const url = revealShareLink();
-    if (url && shareUrlInput) {
-      shareUrlInput.focus();
-      shareUrlInput.select();
-    }
     window.alert(
       "Download Profile only works if you open this in a web browser (like Safari or Chrome), not through an in-app link. You can still get a shareable link though."
     );
     return;
   }
-  revealShareLink({ print: true, view: "resume" });
   window.print();
 };
 
 if (downloadButton) {
-  downloadButton.addEventListener("click", handleDownload);
+  downloadButton.addEventListener("click", () => {
+    suppressPredictionDisplay();
+    handleDownload();
+  });
 }
 
 if (downloadButtonPreview) {
-  downloadButtonPreview.addEventListener("click", handleDownload);
+  downloadButtonPreview.addEventListener("click", () => {
+    suppressPredictionDisplay();
+    handleDownload();
+  });
 }
 
 window.addEventListener(
