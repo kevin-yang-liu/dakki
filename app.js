@@ -1690,9 +1690,15 @@ const applyProfilePayload = (payload) => {
   experienceList.innerHTML = "";
   relationshipCounter = 0;
   const relationships = Array.isArray(payload.relationships) ? payload.relationships : [];
+  let maxRelationshipId = 0;
   relationships.forEach((relationship) => {
     const card = createExperienceCard();
     experienceList.appendChild(card);
+    const nextId = Number(relationship.relationshipId || card.dataset.relationshipId || "0");
+    if (Number.isFinite(nextId) && nextId > 0) {
+      updateRelationshipCardId(card, nextId);
+      maxRelationshipId = Math.max(maxRelationshipId, nextId);
+    }
     setCardData(card, {
       person: relationship.person || "",
       appUsed: Boolean(relationship.appUsed),
@@ -1701,6 +1707,9 @@ const applyProfilePayload = (payload) => {
       roles: Array.isArray(relationship.roles) ? relationship.roles : [],
     });
   });
+  if (maxRelationshipId > 0) {
+    relationshipCounter = maxRelationshipId;
+  }
 
   updateFields();
 };
