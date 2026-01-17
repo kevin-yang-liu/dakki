@@ -50,6 +50,15 @@
             <div class="character-label" id="photo-label">Duck</div>
           </div>
 
+          <div class="field">
+            <label>In a relationship?</label>
+            <div class="toggle-group" id="relationship-status-group" role="group" aria-label="In a relationship?">
+              <button type="button" class="btn-outline toggle-option is-active" data-value="no">No</button>
+              <button type="button" class="btn-outline toggle-option" data-value="yes">Yes</button>
+            </div>
+            <input type="hidden" id="relationship-status" value="no" />
+          </div>
+
           <div class="field-group two-col">
             <div class="field">
               <label for="name">Name</label>
@@ -61,7 +70,7 @@
             </div>
           </div>
 
-          <div class="field-group two-col">
+          <div class="field-group two-col single-only" data-single-only>
             <div class="field">
               <label for="location">Location</label>
               <input id="location" type="text" placeholder="Downtown Toronto" />
@@ -72,100 +81,60 @@
             </div>
           </div>
 
-          <div class="field-group two-col">
+          <div class="field-group two-col single-only" data-single-only>
             <div class="field">
-              <label for="experience-years">Years of exp.</label>
+              <label for="experience-years">Years of dating exp.</label>
               <input id="experience-years" type="number" min="0" placeholder="3" />
-              <small aria-hidden="true">&nbsp;</small>
             </div>
-            <div class="field">
-              <label for="linkedin">LinkedIn (username)</label>
-              <input id="linkedin" type="text" placeholder="jane-doe" />
-              <small>linkedin.com/in/</small>
-            </div>
-          </div>
-
-          <div class="field-group two-col">
-            <div class="field">
-              <label for="github">GitHub (username)</label>
-              <input id="github" type="text" placeholder="janedoe" />
-              <small>github.com/</small>
-            </div>
-            <div class="field">
-              <label for="website">Wesbite (domain)</label>
-              <input id="website" type="text" placeholder="janedoe.com" />
-              <small>https://</small>
-            </div>
-          </div>
-
-          <div class="field-group two-col">
-            <div class="field">
-              <label for="instagram">Instagram (username)</label>
-              <input id="instagram" type="text" placeholder="janedoe" />
-              <small>instagram.com/</small>
-            </div>
-            <div class="field">
-              <label for="banner-link">Banner link</label>
-              <select id="banner-link">
-                <option value="linkedin">LinkedIn</option>
-                <option value="github">GitHub</option>
-                <option value="website">Website</option>
-                <option value="instagram">Instagram</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="field-group two-col">
             <div class="field">
               <label for="age">Age</label>
               <input id="age" type="text" placeholder="25" />
             </div>
+          </div>
+
+          <div class="field-group two-col single-only" data-single-only>
             <div class="field">
               <label for="height">Height</label>
               <input id="height" type="text" placeholder="5'7&quot;" />
+              <small aria-hidden="true">&nbsp;</small>
             </div>
-          </div>
-
-          <div class="field-group two-col">
             <div class="field">
               <label for="zodiac">Zodiac sign</label>
               <input id="zodiac" type="text" placeholder="Aquarius" />
               <small aria-hidden="true">&nbsp;</small>
             </div>
-            <div class="field">
+          </div>
+
+          <div class="field-group two-col single-only" data-single-only>
+            <div class="field field-raised">
               <label for="interested-in">Interested in</label>
               <input id="interested-in" type="text" value="" placeholder="Men" />
               <small aria-hidden="true">&nbsp;</small>
             </div>
           </div>
 
+          <div class="partner-only is-hidden" data-partner-only>
+            <div class="field">
+              <label for="partner-frequency">How often a week do you see your partner?</label>
+              <input id="partner-frequency" type="text" placeholder="Twice" />
+            </div>
+            <div class="field">
+              <label for="partner-goals">How similar are your life goals with each other?</label>
+              <input id="partner-goals" type="text" placeholder="Yes" />
+            </div>
+            <div class="field">
+              <label for="partner-low-effort">Do you enjoy each other's company during low effort moments like running errands or doing chores?</label>
+              <input id="partner-low-effort" type="text" placeholder="Yes" />
+            </div>
+          </div>
+
           <div class="field">
-            <label>Dating experience</label>
-            <small>Add from first relationship to most recent</small>
+            <label id="experience-label">Dating Experience</label>
+            <small id="experience-helper">Enter past dating experiences from first to most recent</small>
             <div class="experience-controls">
               <button type="button" id="add-experience" class="btn-outline">Add relationship</button>
             </div>
             <div id="experience-list" class="experience-list"></div>
-          </div>
-
-          <div class="field">
-            <label for="skills">Your skills</label>
-            <input id="skills" type="text" placeholder="Great cook, good listener, Python, machine learning" />
-          </div>
-
-          <div class="field">
-            <label for="songs">Favorite songs (comma separated)</label>
-            <input id="songs" type="text" placeholder="Sofia, Motion Sickness, Golden Hour" />
-          </div>
-
-          <div class="field">
-            <label for="artists">Favorite artists (comma separated)</label>
-            <input id="artists" type="text" placeholder="Clairo, Frank Ocean, Lorde" />
-          </div>
-
-          <div class="field">
-            <label for="education">Education</label>
-            <input id="education" type="text" placeholder="BSc @ Univesity" />
           </div>
 
           <div class="form-actions">
@@ -190,11 +159,10 @@
             <div class="resume" id="resume">
             <div class="pdf-title" id="pdf-title">Your Dating Resume</div>
             <div class="cover">
-              <div class="cover-content">
-                <div class="cover-name" id="cover-name">Your Name</div>
-                <div class="cover-link" id="cover-link">linkedin.com/in/yourname</div>
-              </div>
+            <div class="cover-content">
+              <div class="cover-name" id="cover-name">Your Name</div>
             </div>
+          </div>
             <div class="resume-top">
               <div class="avatar" id="avatar">
                 <img src="character-assets/duck.png" alt="Profile character" />
@@ -204,17 +172,34 @@
                   <span id="preview-name">Your Name </span>
                   <span id="preview-pronouns" class="pronouns is-hidden"></span>
                 </h2>
-                <div class="meta">
-                  <span id="preview-relationship-summary" class="relationship-summary">Married @ N/A | Prev @ N/A</span>
+                <div class="meta stats-line partner-only is-hidden" data-partner-only>
+                  <span id="preview-relationship-status">Status: relationship</span>
                 </div>
-                <div class="meta stats-line">
+                <div class="partner-only is-hidden" data-partner-only>
+                  <div class="meta stats-line">
+                    <span>Weekly time together:</span>
+                    <span id="preview-partner-frequency">N/A</span>
+                  </div>
+                  <div class="meta stats-line">
+                    <span>Life goals alignment:</span>
+                    <span id="preview-partner-goals">N/A</span>
+                  </div>
+                  <div class="meta stats-line">
+                    <span>Low-effort moments:</span>
+                    <span id="preview-partner-low-effort">N/A</span>
+                  </div>
+                </div>
+                <div class="meta stats-line single-only" data-single-only>
+                  <span id="preview-relationship-status-single">Status: single</span>
+                </div>
+                <div class="meta stats-line single-only" data-single-only>
                   <span id="preview-location">Location</span>
                   <span id="preview-distance" class="is-hidden"></span>
                 </div>
-                <div class="meta stats-line">
+                <div class="meta stats-line single-only" data-single-only>
                   <span id="preview-level">Junior dater with 0 years of experience</span>
                 </div>
-                <div class="meta stats-line">
+                <div class="meta stats-line single-only" data-single-only>
                   <span id="preview-age">Age</span>
                   <span id="preview-height">Height</span>
                   <span id="preview-zodiac">Zodiac</span>
@@ -223,41 +208,25 @@
               </div>
             </div>
 
-            <div class="profile-links">
-              <div class="links-row" id="preview-links-primary"></div>
-              <div class="links-row" id="preview-links-secondary"></div>
-            </div>
-
             <div class="resume-grid">
               <div class="resume-block">
-                <h3>Dating Experience</h3>
+                <h3 id="experience-heading">Dating Experience</h3>
                 <div id="preview-relationship-experience" class="experience-feed"></div>
               </div>
-
-              <div class="resume-block compact-block">
-                <h3>Skills</h3>
-                <div id="preview-skills" class="chip-wrap"></div>
-              </div>
-
-              <div class="resume-block compact-block">
-                <div class="music-grid">
-                  <div>
-                    <h3>Top Songs</h3>
-                    <div id="preview-songs" class="chip-wrap"></div>
-                  </div>
-                  <div>
-                    <h3>Top Artists</h3>
-                    <div id="preview-artists" class="chip-wrap"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="resume-block compact-block">
-                <h3>Education</h3>
-                <p id="preview-education"></p>
+              <div class="resume-block prediction-block print-only is-hidden" id="prediction-block">
+                <h3>End of 2026 prediction</h3>
+                <p id="resume-prediction-text"></p>
               </div>
             </div>
             </div>
+          </div>
+          <div class="prediction-actions">
+            <button type="button" id="predict-relationship" class="btn-outline">Predict 2026</button>
+          </div>
+          <div class="prediction-panel is-hidden" id="prediction-panel">
+            <p class="prediction-label">End of 2026 prediction</p>
+            <button type="button" class="prediction-close" id="prediction-close" aria-label="Close prediction">×</button>
+            <p class="prediction-text" id="prediction-text"></p>
           </div>
           <div class="preview-actions">
             <button type="button" id="get-share-link" class="btn-outline btn-filled">Get shareable link</button>

@@ -53,11 +53,6 @@ const fields = {
     preview: document.getElementById("preview-height"),
     fallback: "Height",
   },
-  education: {
-    input: document.getElementById("education"),
-    preview: document.getElementById("preview-education"),
-    fallback: "",
-  },
   zodiac: {
     input: document.getElementById("zodiac"),
     preview: document.getElementById("preview-zodiac"),
@@ -70,31 +65,12 @@ const fields = {
     formatter: (value) => (value ? `Interested in ${value}` : "Interested in"),
   },
 };
-
-const listFields = {
-  songs: {
-    input: document.getElementById("songs"),
-    preview: document.getElementById("preview-songs"),
-    fallback: [],
-  },
-  artists: {
-    input: document.getElementById("artists"),
-    preview: document.getElementById("preview-artists"),
-    fallback: [],
-  },
-};
-
-const skillsInput = document.getElementById("skills");
-const skillsPreview = document.getElementById("preview-skills");
 const experienceList = document.getElementById("experience-list");
 const addExperienceButton = document.getElementById("add-experience");
 const experiencePreview = document.getElementById("preview-relationship-experience");
 const relationshipSummary = document.getElementById("preview-relationship-summary");
 const downloadButton = document.getElementById("download-pdf");
 const downloadButtonPreview = document.getElementById("download-pdf-preview");
-const linksPrimary = document.getElementById("preview-links-primary");
-const linksSecondary = document.getElementById("preview-links-secondary");
-const bannerLinkSelect = document.getElementById("banner-link");
 const profileCodeInput = document.getElementById("profile-code");
 const randomizeResumeButton = document.getElementById("randomize-resume");
 const randomizeNote = document.getElementById("randomize-note");
@@ -107,24 +83,43 @@ const shareUrlInput = document.getElementById("share-url");
 const copyShareUrlButton = document.getElementById("copy-share-url");
 const getShareLinkButton = document.getElementById("get-share-link");
 const shareLinkError = document.getElementById("share-link-error");
+const predictButton = document.getElementById("predict-relationship");
+const predictionPanel = document.getElementById("prediction-panel");
+const predictionText = document.getElementById("prediction-text");
+const predictionCloseButton = document.getElementById("prediction-close");
+const resumePredictionBlock = document.getElementById("prediction-block");
+const resumePredictionText = document.getElementById("resume-prediction-text");
+const relationshipStatusInput = document.getElementById("relationship-status");
+const relationshipStatusGroup = document.getElementById("relationship-status-group");
+const relationshipStatusButtons = relationshipStatusGroup
+  ? Array.from(relationshipStatusGroup.querySelectorAll("[data-value]"))
+  : [];
+const partnerFrequencyInput = document.getElementById("partner-frequency");
+const partnerGoalsInput = document.getElementById("partner-goals");
+const partnerLowEffortInput = document.getElementById("partner-low-effort");
+const partnerFrequencyPreview = document.getElementById("preview-partner-frequency");
+const partnerGoalsPreview = document.getElementById("preview-partner-goals");
+const partnerLowEffortPreview = document.getElementById("preview-partner-low-effort");
+const partnerStatusPreview = document.getElementById("preview-relationship-status");
+const singleStatusPreview = document.getElementById("preview-relationship-status-single");
+const experienceHeading = document.getElementById("experience-heading");
+const experienceLabel = document.getElementById("experience-label");
+const experienceHelper = document.getElementById("experience-helper");
+const singleOnlySections = Array.from(document.querySelectorAll("[data-single-only]"));
+const partnerOnlySections = Array.from(document.querySelectorAll("[data-partner-only]"));
 const removePhotoButton = document.getElementById("remove-photo");
 const photoHint = document.getElementById("photo-hint");
 const coverName = document.getElementById("cover-name");
-const coverLink = document.getElementById("cover-link");
 const previewPanel = document.querySelector(".preview-panel");
 const previewActions = document.querySelector(".preview-actions");
 const resumeStage = document.getElementById("resume-stage");
-
-const linkedinInput = document.getElementById("linkedin");
-const githubInput = document.getElementById("github");
-const websiteInput = document.getElementById("website");
-const instagramInput = document.getElementById("instagram");
 const randomizeButton = document.getElementById("randomize-profile");
 const interestedInInput = document.getElementById("interested-in");
 
 let relationshipCounter = 0;
 let hasUserUploadedPhoto = false;
 let randomizeNoteDismissed = false;
+let predictionValue = "";
 
 const monthMap = {
   jan: 0,
@@ -522,7 +517,7 @@ const updateRelationshipCardId = (card, nextId) => {
   const personInput = card.querySelector('[data-field="person"]');
   if (personInput) {
     const selected = personInput.value;
-    const options = getPersonOptions(nextId);
+    const options = getPersonOptions();
     const normalized = selected
       ? normalizePersonSelection(selected, nextId)
       : options[0];
@@ -549,15 +544,18 @@ const createExperienceCard = () => {
   wrapper.className = "experience-card";
   wrapper.dataset.relationshipId = String(relationshipCounter);
   wrapper.dataset.roleCount = "0";
+  const relationshipLabel = isInRelationship()
+    ? "Relationship"
+    : `Relationship ${relationshipCounter}`;
   wrapper.innerHTML = `
     <div class="experience-header">
-      <h4 class="relationship-label">Relationship ${relationshipCounter}</h4>
+      <h4 class="relationship-label">${relationshipLabel}</h4>
       <button type="button" class="btn-link" data-remove>Remove</button>
     </div>
     <div class="field">
       <label>Person</label>
       <select data-field="person">
-        ${getPersonOptions(relationshipCounter)
+        ${getPersonOptions()
           .map((option) => `<option value="${option}">${option}</option>`)
           .join("")}
       </select>
@@ -621,6 +619,7 @@ const getRelationshipData = () => {
     const person = getValue('[data-field="person"]');
 
     return {
+      relationshipId: Number(card.dataset.relationshipId || "0"),
       person,
       appUsed,
       appName,
@@ -630,15 +629,28 @@ const getRelationshipData = () => {
   });
 };
 
+const isCurrentRole = (role) => {
+  const endText = (role.end || "").trim();
+  return !endText || /present/i.test(endText);
+};
+
 const updateRelationshipSummary = (relationships) => {
+  if (!relationshipSummary) {
+    return;
+  }
   const marriedPeople = relationships
-    .filter((item) => getRelationshipType(item.roles) === "marriage")
+    .filter((item) =>
+      item.roles.some((role) => role.type === "marriage" && isCurrentRole(role))
+    )
     .map((item) => item.person)
     .filter(Boolean);
   const primaryMarried = marriedPeople[0] || "";
   const additionalMarried = marriedPeople.slice(1);
   const people = relationships
-    .filter((item) => getRelationshipType(item.roles) !== "marriage")
+    .filter(
+      (item) =>
+        !item.roles.some((role) => role.type === "marriage" && isCurrentRole(role))
+    )
     .map((item) => item.person)
     .filter(Boolean)
     .concat(additionalMarried);
@@ -646,7 +658,6 @@ const updateRelationshipSummary = (relationships) => {
   const normalizePerson = (value) =>
     value
       .toLowerCase()
-      .replace(/\b(some|another)\b/g, "")
       .replace(/\s+/g, " ")
       .trim();
 
@@ -712,67 +723,6 @@ const updateRelationshipSummary = (relationships) => {
   relationshipSummary.textContent = `Married @ ${marriedText} | Prev @ ${prevText}`;
 };
 
-const updateLinksPreview = () => {
-  const linkedin = linkedinInput.value.trim();
-  const github = githubInput.value.trim();
-  const website = websiteInput.value.trim();
-  const instagram = instagramInput.value.trim();
-
-  linksPrimary.innerHTML = "";
-  linksSecondary.innerHTML = "";
-
-  const primaryLinks = [];
-  if (linkedin) {
-    primaryLinks.push({
-      label: `linkedin.com/in/${linkedin}/`,
-      href: `https://www.linkedin.com/in/${linkedin}/`,
-    });
-  }
-  if (github) {
-    primaryLinks.push({
-      label: `github.com/${github}`,
-      href: `https://github.com/${github}`,
-    });
-  }
-
-  primaryLinks.forEach((link, index) => {
-    const anchor = document.createElement("a");
-    anchor.href = link.href;
-    anchor.textContent = link.label;
-    anchor.target = "_blank";
-    anchor.rel = "noreferrer";
-    linksPrimary.appendChild(anchor);
-    if (index < primaryLinks.length - 1) {
-      const separator = document.createElement("span");
-      separator.textContent = " · ";
-      linksPrimary.appendChild(separator);
-    }
-  });
-
-  if (website) {
-    const anchor = document.createElement("a");
-    anchor.href = `https://${website}`;
-    anchor.textContent = `https://${website}`;
-    anchor.target = "_blank";
-    anchor.rel = "noreferrer";
-    linksSecondary.appendChild(anchor);
-  }
-
-  if (instagram) {
-    if (website) {
-      const separator = document.createElement("span");
-      separator.textContent = " · ";
-      linksSecondary.appendChild(separator);
-    }
-    const anchor = document.createElement("a");
-    anchor.href = `https://www.instagram.com/${instagram}/`;
-    anchor.textContent = `instagram.com/${instagram}`;
-    anchor.target = "_blank";
-    anchor.rel = "noreferrer";
-    linksSecondary.appendChild(anchor);
-  }
-};
-
 const updateAppLabel = (card) => {
   const roles = Array.from(card.querySelectorAll(".role-card")).map((role) => {
     const getRoleValue = (selector) => role.querySelector(selector)?.value.trim() || "";
@@ -788,22 +738,30 @@ const updateAppLabel = (card) => {
 };
 
 const renderExperiencePreview = () => {
-  const relationships = getRelationshipData().filter((item) => {
+  const rawRelationships = getRelationshipData();
+  const relationships = rawRelationships.filter((item) => {
     const hasRole = item.roles.some((role) =>
       [role.type, role.start, role.end, role.summary, role.location].some(Boolean)
     );
     return [item.person].some(Boolean) || hasRole || item.appUsed;
   });
+  const displayRelationships = relationships.length ? relationships : rawRelationships;
 
   experiencePreview.innerHTML = "";
-  updateRelationshipSummary(relationships);
+  updateRelationshipSummary(displayRelationships);
 
-  if (!relationships.length) {
-    experiencePreview.innerHTML = `<p class="experience-meta">Add relationship entries to show them here.</p>`;
+  if (!displayRelationships.length) {
+    experiencePreview.innerHTML = `<p class="experience-meta">User has decided to keep their relationship info private</p>`;
     return;
   }
 
-  relationships.forEach((item) => {
+  const sortedRelationships = isInRelationship()
+    ? displayRelationships
+    : [...displayRelationships].sort(
+        (a, b) => (b.relationshipId || 0) - (a.relationshipId || 0)
+      );
+
+  sortedRelationships.forEach((item) => {
     const wrapper = document.createElement("div");
     wrapper.className = "experience-item";
 
@@ -842,8 +800,13 @@ const renderExperiencePreview = () => {
       })
       .join("");
 
+    const personLabel = item.person || "Relationship";
+    const relationshipIndex = item.relationshipId || 1;
+    const personHeading = isInRelationship()
+      ? personLabel
+      : `#${relationshipIndex}: ${personLabel}`;
     wrapper.innerHTML = `
-      <h4>${item.person || "Relationship"}</h4>
+      <h4>${personHeading}</h4>
       ${appLine ? `<span class="experience-pill">${appLine}</span>` : ""}
       ${rolesMarkup ? `<div class="preview-role-list">${rolesMarkup}</div>` : ""}
     `;
@@ -852,9 +815,112 @@ const renderExperiencePreview = () => {
   });
 };
 
-const normalizeEducation = (value) => value.replace(/—/g, "@");
-
 let resumeScaleRaf = null;
+
+const isInRelationship = () => relationshipStatusInput?.value === "yes";
+
+const syncRelationshipButtons = () => {
+  if (!relationshipStatusInput || !relationshipStatusButtons.length) {
+    return;
+  }
+  relationshipStatusButtons.forEach((button) => {
+    const isActive = button.dataset.value === relationshipStatusInput.value;
+    button.classList.toggle("is-active", isActive);
+  });
+};
+
+const getCurrentRelationshipStatus = () => {
+  const relationships = getRelationshipData();
+  const currentRoles = relationships
+    .flatMap((relationship) => relationship.roles)
+    .filter((role) => isCurrentRole(role));
+  const currentRole = currentRoles[0] || relationships[0]?.roles[0];
+  if (!currentRole) {
+    return "relationship";
+  }
+  return formatRoleType(currentRole.type, currentRole.typeOther).toLowerCase();
+};
+
+const updateRelationshipVisibility = () => {
+  const inRelationship = isInRelationship();
+  singleOnlySections.forEach((section) => {
+    section.classList.toggle("is-hidden", inRelationship);
+  });
+  partnerOnlySections.forEach((section) => {
+    section.classList.toggle("is-hidden", !inRelationship);
+  });
+  if (addExperienceButton) {
+    addExperienceButton.classList.toggle("is-hidden", inRelationship);
+    addExperienceButton.disabled = inRelationship;
+  }
+  if (experienceHeading) {
+    experienceHeading.textContent = inRelationship ? "Relationship details" : "Dating Experience";
+  }
+  if (experienceLabel) {
+    experienceLabel.textContent = inRelationship ? "RELATIONSHIP DETAILS" : "Dating Experience";
+  }
+  if (experienceHelper) {
+    experienceHelper.textContent = inRelationship
+      ? "Enter details about your relationship"
+      : "Enter past dating experiences from first to most recent";
+  }
+  syncRelationshipButtons();
+  const cards = Array.from(experienceList.querySelectorAll(".experience-card"));
+  cards.forEach((card, index) => {
+    const label = card.querySelector(".relationship-label");
+    if (!label) {
+      return;
+    }
+    const relationshipId = card.dataset.relationshipId || String(index + 1);
+    label.textContent = inRelationship ? "Relationship" : `Relationship ${relationshipId}`;
+  });
+};
+
+const resetPartnerAnswers = () => {
+  if (partnerFrequencyInput) {
+    partnerFrequencyInput.value = "";
+  }
+  if (partnerGoalsInput) {
+    partnerGoalsInput.value = "";
+  }
+  if (partnerLowEffortInput) {
+    partnerLowEffortInput.value = "";
+  }
+};
+
+const resetExperienceForCurrentRelationship = () => {
+  relationshipCounter = 0;
+  experienceList.innerHTML = "";
+  const card = createExperienceCard();
+  experienceList.appendChild(card);
+};
+
+const resetExperienceForSingle = () => {
+  relationshipCounter = 0;
+  experienceList.innerHTML = "";
+  const card = createExperienceCard();
+  experienceList.appendChild(card);
+  const personInput = card.querySelector('[data-field="person"]');
+  if (personInput) {
+    personInput.value = "man";
+  }
+  const roleCard = card.querySelector(".role-card");
+  if (roleCard) {
+    const typeSelect = roleCard.querySelector('[data-role-field="type"]');
+    if (typeSelect) {
+      typeSelect.value = "relationship";
+      updateRoleTypeField(roleCard);
+    }
+    const startInput = roleCard.querySelector('[data-role-field="start"]');
+    const endInput = roleCard.querySelector('[data-role-field="end"]');
+    if (startInput) {
+      startInput.value = "";
+    }
+    if (endInput) {
+      endInput.value = "";
+    }
+  }
+};
 
 const updateResumeScrollState = () => {
   if (!resumeStage) {
@@ -891,15 +957,9 @@ const updatePreviewActionsVisibility = () => {
 };
 
 const updateFields = () => {
+  updateRelationshipVisibility();
   Object.values(fields).forEach(({ input, preview, fallback, formatter }) => {
     let value = input.value.trim();
-    if (input === fields.education.input) {
-      const normalized = normalizeEducation(value);
-      if (normalized !== value) {
-        input.value = normalized;
-        value = normalized;
-      }
-    }
     if (formatter) {
       preview.textContent = formatter(value);
       return;
@@ -925,44 +985,26 @@ const updateFields = () => {
     fields.distance.preview.classList.add("is-hidden");
   }
 
-  Object.values(listFields).forEach(({ input, preview, fallback }) => {
-    const items = input.value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-
-    preview.innerHTML = "";
-    if (!items.length) {
-      return;
-    }
-    items.forEach((item) => {
-      const chip = document.createElement("span");
-      chip.className = "chip";
-      chip.textContent = item;
-      preview.appendChild(chip);
-    });
-  });
-
-  const skills = skillsInput.value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  skillsPreview.innerHTML = "";
-  if (skills.length) {
-    skills.forEach((skill) => {
-      const chip = document.createElement("span");
-      chip.className = "chip";
-      chip.textContent = skill;
-      skillsPreview.appendChild(chip);
-    });
-  }
-
   Array.from(experienceList.querySelectorAll(".experience-card")).forEach((card) => {
     updateAppLabel(card);
   });
 
-  updateLinksPreview();
+  if (partnerFrequencyPreview) {
+    partnerFrequencyPreview.textContent = partnerFrequencyInput?.value.trim() || "N/A";
+  }
+  if (partnerGoalsPreview) {
+    partnerGoalsPreview.textContent = partnerGoalsInput?.value.trim() || "N/A";
+  }
+  if (partnerLowEffortPreview) {
+    partnerLowEffortPreview.textContent = partnerLowEffortInput?.value.trim() || "N/A";
+  }
+  if (partnerStatusPreview) {
+    partnerStatusPreview.textContent = `Status: ${getCurrentRelationshipStatus()}`;
+  }
+  if (singleStatusPreview) {
+    singleStatusPreview.textContent = "Status: single";
+  }
+
   renderExperiencePreview();
   updateDocumentTitles();
   updateAvatarPlaceholder();
@@ -981,31 +1023,11 @@ const updateDocumentTitles = () => {
 };
 
 const updateCoverContent = () => {
-  if (!coverName || !coverLink) {
+  if (!coverName) {
     return;
   }
   const name = fields.name.input.value.trim() || "Your Name";
-  const selection = bannerLinkSelect?.value || "linkedin";
-  let linkText = "linkedin.com/in/yourname";
-  if (selection === "github") {
-    linkText = githubInput.value.trim()
-      ? `github.com/${githubInput.value.trim()}`
-      : "github.com/yourname";
-  } else if (selection === "website") {
-    linkText = websiteInput.value.trim()
-      ? `https://${websiteInput.value.trim()}`
-      : "yourname.com";
-  } else if (selection === "instagram") {
-    linkText = instagramInput.value.trim()
-      ? `instagram.com/${instagramInput.value.trim()}`
-      : "instagram.com/yourname";
-  } else {
-    linkText = linkedinInput.value.trim()
-      ? `linkedin.com/in/${linkedinInput.value.trim()}`
-      : "linkedin.com/in/yourname";
-  }
   coverName.textContent = name;
-  coverLink.textContent = linkText;
 };
 
 const randomItem = (list) => list[Math.floor(Math.random() * list.length)];
@@ -1054,28 +1076,6 @@ const profileData = {
   ],
   zodiacs: ["Aquarius", "Leo", "Libra", "Sagittarius", "Taurus", "Gemini", "Virgo", "Scorpio"],
   heights: ["5'4\"", "5'8\"", "5'10\"", "6'0\""],
-  education: [
-    "BA Literature @ Boston University",
-    "BSc Computer Science @ Western University",
-    "MBA @ Harvard Business School",
-    "BSc Math @ University of Toronto",
-  ],
-  skills: [
-  "Listening",
-  "Cooking",
-  "Honesty",
-  "Card magic",
-  "Dancing",
-  "Chess",
-  "Java",
-  "Finding food",
-  "Texts fast",
-  "Machine learning",
-  "Python",
-  "Wine connosseur",
-],
-  songs: ["Sofia", "Pink + White", "Dreams", "Motion Sickness", "Golden Hour", "The Less I Know the Better"],
-  artists: ["Clairo", "Frank Ocean", "Lorde", "Bad Bunny", "The 1975", "SZA", "Phoebe Bridgers"],
   experienceSummaries: [
     "remove this"
   ],
@@ -1121,6 +1121,9 @@ const profileData = {
     "Auckland",
     "Remote",
   ],
+  partnerFrequency: ["1-2 times", "2 times", "5+ times", "Weekend heavy"],
+  partnerGoals: ["Very aligned", "Mostly aligned", "Growing together", "Still figuring it out"],
+  partnerLowEffort: ["Yes", "Most of the time", "Sometimes", "Working on it"],
   apps: ["Hinge", "Tinder", "Bumble", "Other", ""],
   appOther: ["Coffee Meets Bagel", "LinkedIn", "Wechat", "OkCupid", "Facebook Marketplace"],
 };
@@ -1133,30 +1136,129 @@ const randomMonthYear = (yearStart, yearEnd) => {
   return `${month} ${year}`;
 };
 
-const buildUsername = (name) => name.toLowerCase().replace(/\s+/g, "");
-
 const PERSON_BASE_OPTIONS = ["man", "woman", "nonbinary person"];
 
-const getPersonLabel = (prefix, base) => `${prefix} ${base}`;
+const getPersonOptions = () => PERSON_BASE_OPTIONS.slice();
 
-const getPersonOptions = (relationshipId) => {
-  const prefix = relationshipId > 1 ? "Another" : "Some";
-  return PERSON_BASE_OPTIONS.map((base) => getPersonLabel(prefix, base));
-};
-
-const normalizePersonSelection = (value, relationshipId) => {
+const normalizePersonSelection = (value) => {
   const lower = value.toLowerCase();
-  const prefix = relationshipId > 1 ? "Another" : "Some";
   if (lower.includes("woman")) {
-    return getPersonLabel(prefix, "woman");
+    return "woman";
   }
   if (lower.includes("man") && !lower.includes("woman")) {
-    return getPersonLabel(prefix, "man");
+    return "man";
   }
   if (lower.includes("nonbinary")) {
-    return getPersonLabel(prefix, "nonbinary person");
+    return "nonbinary person";
   }
-  return getPersonLabel(prefix, "nonbinary person");
+  return "nonbinary person";
+};
+
+const hashString = (value) => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) % 2147483647;
+  }
+  return Math.abs(hash);
+};
+
+const pickFromList = (list, seed) => {
+  if (!list.length) {
+    return "";
+  }
+  return list[seed % list.length];
+};
+
+const getInterestedLabel = () => {
+  const value = (interestedInInput?.value || "").toLowerCase();
+  if (value.includes("women") || value.includes("woman")) {
+    return "woman";
+  }
+  if (value.includes("men") || value.includes("man")) {
+    return "man";
+  }
+  if (value.includes("nonbinary")) {
+    return "nonbinary person";
+  }
+  if (value.includes("all") || value.includes("everyone")) {
+    return "partner";
+  }
+  return "partner";
+};
+
+const getPredictionContext = () => {
+  const relationships = getRelationshipData();
+  const pastPartners = relationships.map((item) => item.person).filter(Boolean);
+
+  const experienceYears = Number(fields.experienceYears.input.value.trim() || "0");
+  const age = Number(fields.age.input.value.trim() || "0");
+
+  return {
+    name: fields.name.input.value.trim() || "You",
+    pronouns: fields.pronouns.input.value.trim(),
+    interestedLabel: getInterestedLabel(),
+    pastPartners,
+    experienceYears: Number.isFinite(experienceYears) ? experienceYears : 0,
+    age: Number.isFinite(age) ? age : 0,
+  };
+};
+
+const buildPredictionText = () => {
+  const context = getPredictionContext();
+  const payload = JSON.stringify({
+    name: context.name,
+    pronouns: context.pronouns,
+    interestedLabel: context.interestedLabel,
+    pastPartners: context.pastPartners,
+    experienceYears: context.experienceYears,
+    age: context.age,
+  });
+  const seed = hashString(payload);
+  const pastPartners = context.pastPartners.length
+    ? context.pastPartners
+    : [`a past ${context.interestedLabel}`];
+  const pickPastPartner = (seedOffset) => pickFromList(pastPartners, seed + seedOffset);
+  const primaryPast = pickPastPartner(3);
+  const secondaryPast = pickPastPartner(7);
+
+  const coreOutcomes = [
+    `sparking up a relationship with ${primaryPast} and keeping it low-key`,
+    `catching feelings for a new ${context.interestedLabel} from your friend group`,
+    `rekindling with ${primaryPast} before realizing ${secondaryPast} is the real plot twist`,
+    `going from "single era" to talking stage with a bold ${context.interestedLabel} you meet at a cafe`,
+    `getting back together with ${primaryPast} and then leveling up to cohabitation`,
+    `staying single for a minute, then meeting ${secondaryPast} who shifts everything`,
+    `starting a situationship with ${primaryPast} that unexpectedly turns into marriage`,
+    `ghosting ${primaryPast} and then getting a sincere apology that restarts the story`,
+    `meeting a new ${context.interestedLabel} through work and calling it official by fall`,
+    `going viral on a dating app and landing a serious relationship with a new ${context.interestedLabel}`,
+    `deciding to go no-contact, then bumping into ${primaryPast} at a wedding`,
+    `unlocking a slow-burn romance with ${secondaryPast} after months of "just friends"`,
+    `accidentally dating two people and choosing ${primaryPast} for real`,
+    `getting engaged to a new ${context.interestedLabel} after a chaotic group trip`,
+  ];
+
+  const flavorAdds = [
+    "after a bold hinge swipe.",
+    "once you stop replying in 3-day batches.",
+    "when your top song becomes your couple song.",
+    "after a random coffee run turns into a date.",
+    "right after a chaotic group chat dares you to text first.",
+    "after your friends force you to actually say yes to plans.",
+    "because you finally leave the house on a weeknight.",
+    "right after you delete and re-download a dating app.",
+    "the moment you decide to be direct about what you want.",
+  ];
+
+  const outcome = pickFromList(coreOutcomes, seed);
+  const flavor = pickFromList(flavorAdds, seed + 11);
+
+  const intensityTag =
+    context.experienceYears >= 6 || context.age >= 30
+      ? "Big energy forecast:"
+      : "Soft launch forecast:";
+
+  return `${intensityTag} By the end of 2026, you're ${outcome} ${flavor}`;
 };
 
 const setCardData = (card, data) => {
@@ -1168,9 +1270,9 @@ const setCardData = (card, data) => {
 
   if (personInput) {
     const relationshipId = Number(card.dataset.relationshipId || "1");
-    const options = getPersonOptions(relationshipId);
+    const options = getPersonOptions();
     const nextValue = data.person
-      ? normalizePersonSelection(data.person, relationshipId)
+      ? normalizePersonSelection(data.person)
       : options[0];
     personInput.value = options.includes(nextValue) ? nextValue : options[0];
   }
@@ -1233,7 +1335,7 @@ const randomizeProfile = () => {
   const first = isFemaleName ? randomItem(nameData.firstFemale) : randomItem(nameData.firstMale);
   const last = randomItem(nameData.last);
   const name = `${first} ${last}`;
-  const username = buildUsername(name);
+  const inRelationship = randomBool(0.45);
 
   hasUserUploadedPhoto = false;
   setSelectedCharacterAsset(randomItem(frontCharacterAssets));
@@ -1253,41 +1355,40 @@ const randomizeProfile = () => {
   fields.age.input.value = String(randomInt(22, 36));
   fields.height.input.value = randomItem(profileData.heights);
   fields.zodiac.input.value = randomItem(profileData.zodiacs);
-  fields.education.input.value = randomItem(profileData.education);
   if (interestedInInput) {
     interestedInInput.value = randomItem(["men", "women", "nonbinary people"]);
   }
-
-  linkedinInput.value = `${username}-${randomInt(1, 99)}`;
-  githubInput.value = username;
-  websiteInput.value = `${username}.com`;
-  instagramInput.value = username;
-  if (bannerLinkSelect) {
-    bannerLinkSelect.value = randomItem(["linkedin", "github", "website", "instagram"]);
+  if (relationshipStatusInput) {
+    relationshipStatusInput.value = inRelationship ? "yes" : "no";
   }
-
-  const pickedSkills = Array.from({ length: randomInt(5, 8) }, () => randomItem(profileData.skills));
-  skillsInput.value = Array.from(new Set(pickedSkills)).join(", ");
-
-  const pickedSongs = Array.from({ length: 3 }, () => randomItem(profileData.songs));
-  listFields.songs.input.value = pickedSongs.join(", ");
-
-  const pickedArtists = Array.from({ length: 3 }, () => randomItem(profileData.artists));
-  listFields.artists.input.value = pickedArtists.join(", ");
+  syncRelationshipButtons();
+  if (inRelationship) {
+    if (partnerFrequencyInput) {
+      partnerFrequencyInput.value = randomItem(profileData.partnerFrequency);
+    }
+    if (partnerGoalsInput) {
+      partnerGoalsInput.value = randomItem(profileData.partnerGoals);
+    }
+    if (partnerLowEffortInput) {
+      partnerLowEffortInput.value = randomItem(profileData.partnerLowEffort);
+    }
+  } else {
+    resetPartnerAnswers();
+  }
 
   relationshipCounter = 0;
   experienceList.innerHTML = "";
-  const relationshipCount = randomInt(1, 2);
-  for (let i = 0; i < relationshipCount; i += 1) {
+  if (inRelationship) {
     const card = createExperienceCard();
     experienceList.appendChild(card);
 
-    const personName = randomItem(getPersonOptions(i + 1));
-    const rolesCount = randomInt(1, 2);
-    const roles = Array.from({ length: rolesCount }, () => {
-      const startYear = randomInt(2017, 2022);
-      const endYear = randomBool(0.3) ? "" : String(randomInt(startYear + 1, 2024));
-      const type = randomItem(["marriage", "cohabitation", "relationship", "talking", "other"]);
+    const personName = randomItem(getPersonOptions());
+    const rolesCount = randomInt(1, 3);
+    const roles = Array.from({ length: rolesCount }, (_, index) => {
+      const startYear = randomInt(2020, 2024);
+      const type = randomItem(["cohabitation", "relationship", "talking", "other", "marriage"]);
+      const isCurrentRole = index === rolesCount - 1;
+      const endYear = isCurrentRole ? "" : String(randomInt(startYear, 2025));
       return {
         type,
         typeOther: type === "other" ? ROLE_OTHER_DEFAULT : "",
@@ -1311,11 +1412,47 @@ const randomizeProfile = () => {
       roles,
     });
     reorderRoleCards(card);
+  } else {
+    const relationshipCount = randomInt(1, 2);
+    for (let i = 0; i < relationshipCount; i += 1) {
+      const card = createExperienceCard();
+      experienceList.appendChild(card);
 
-    const highlight = randomItem(profileData.experienceSummaries);
-    const summaryInput = card.querySelector('[data-role-field="summary"]');
-    if (summaryInput && !summaryInput.value) {
-      summaryInput.value = highlight;
+      const personName = randomItem(getPersonOptions());
+      const rolesCount = randomInt(1, 2);
+      const roles = Array.from({ length: rolesCount }, () => {
+        const startYear = randomInt(2017, 2023);
+        const type = randomItem(["marriage", "cohabitation", "relationship", "talking", "other"]);
+        const endYear = String(randomInt(startYear, 2025));
+        return {
+          type,
+          typeOther: type === "other" ? ROLE_OTHER_DEFAULT : "",
+          start: randomMonthYear(startYear, startYear),
+          end: `${randomItem(monthNames)} ${endYear}`,
+          summary: randomItem(profileData.roleSummaries),
+          location: randomItem(profileData.roleLocations),
+          remote: randomBool(0.2),
+        };
+      });
+
+      const appUsed = randomBool(0.45);
+      const appName = appUsed ? randomItem(profileData.apps) : "";
+      const appOther = appName === "Other" ? randomItem(profileData.appOther) : "";
+
+      setCardData(card, {
+        person: personName,
+        appUsed,
+        appName,
+        appOther,
+        roles,
+      });
+      reorderRoleCards(card);
+
+      const highlight = randomItem(profileData.experienceSummaries);
+      const summaryInput = card.querySelector('[data-role-field="summary"]');
+      if (summaryInput && !summaryInput.value) {
+        summaryInput.value = highlight;
+      }
     }
   }
 
@@ -1355,6 +1492,40 @@ const setShareLinkErrorVisible = (isVisible) => {
     return;
   }
   shareLinkError.classList.toggle("is-hidden", !isVisible);
+};
+
+const resetPredictionPanel = () => {
+  if (!predictionPanel || !predictionText) {
+    return;
+  }
+  predictionPanel.classList.add("is-hidden");
+  predictionText.textContent = "";
+  predictionValue = "";
+  if (resumePredictionBlock && resumePredictionText) {
+    resumePredictionBlock.classList.add("is-hidden");
+    resumePredictionText.textContent = "";
+  }
+};
+
+const updatePredictionDisplay = () => {
+  if (!predictionPanel || !predictionText) {
+    return;
+  }
+  if (!predictionValue) {
+    predictionPanel.classList.add("is-hidden");
+    predictionText.textContent = "";
+    if (resumePredictionBlock && resumePredictionText) {
+      resumePredictionBlock.classList.add("is-hidden");
+      resumePredictionText.textContent = "";
+    }
+    return;
+  }
+  predictionPanel.classList.remove("is-hidden");
+  predictionText.textContent = predictionValue;
+  if (resumePredictionBlock && resumePredictionText) {
+    resumePredictionBlock.classList.remove("is-hidden");
+    resumePredictionText.textContent = predictionValue;
+  }
 };
 
 const updatePhotoHint = () => {
@@ -1461,23 +1632,17 @@ const buildProfilePayload = () => ({
     experienceYears: fields.experienceYears.input.value.trim(),
     age: fields.age.input.value.trim(),
     height: fields.height.input.value.trim(),
-    education: fields.education.input.value.trim(),
     zodiac: fields.zodiac.input.value.trim(),
     interestedIn: interestedInInput?.value.trim() || "",
+    relationshipStatus: relationshipStatusInput?.value || "no",
+    partnerFrequency: partnerFrequencyInput?.value.trim() || "",
+    partnerGoals: partnerGoalsInput?.value.trim() || "",
+    partnerLowEffort: partnerLowEffortInput?.value.trim() || "",
   },
-  links: {
-    linkedin: linkedinInput.value.trim(),
-    github: githubInput.value.trim(),
-    website: websiteInput.value.trim(),
-    instagram: instagramInput.value.trim(),
-    banner: bannerLinkSelect?.value || "linkedin",
-  },
-  skills: skillsInput.value,
-  songs: listFields.songs.input.value,
-  artists: listFields.artists.input.value,
   relationships: getRelationshipData(),
   avatarSrc: getSelectedCharacterAsset(),
   avatarText: getAvatarText(),
+  prediction: predictionValue,
 });
 
 const applyProfilePayload = (payload) => {
@@ -1492,23 +1657,25 @@ const applyProfilePayload = (payload) => {
   fields.experienceYears.input.value = payload.fields?.experienceYears || "";
   fields.age.input.value = payload.fields?.age || "";
   fields.height.input.value = payload.fields?.height || "";
-  fields.education.input.value = payload.fields?.education || "";
   fields.zodiac.input.value = payload.fields?.zodiac || "";
   if (interestedInInput) {
     interestedInInput.value = payload.fields?.interestedIn || "men";
   }
-
-  linkedinInput.value = payload.links?.linkedin || "";
-  githubInput.value = payload.links?.github || "";
-  websiteInput.value = payload.links?.website || "";
-  instagramInput.value = payload.links?.instagram || "";
-  if (bannerLinkSelect) {
-    bannerLinkSelect.value = payload.links?.banner || "linkedin";
+  if (relationshipStatusInput) {
+    relationshipStatusInput.value = payload.fields?.relationshipStatus || "no";
   }
-
-  skillsInput.value = payload.skills || "";
-  listFields.songs.input.value = payload.songs || "";
-  listFields.artists.input.value = payload.artists || "";
+  syncRelationshipButtons();
+  if (partnerFrequencyInput) {
+    partnerFrequencyInput.value = payload.fields?.partnerFrequency || "";
+  }
+  if (partnerGoalsInput) {
+    partnerGoalsInput.value = payload.fields?.partnerGoals || "";
+  }
+  if (partnerLowEffortInput) {
+    partnerLowEffortInput.value = payload.fields?.partnerLowEffort || "";
+  }
+  predictionValue = payload.prediction || "";
+  updatePredictionDisplay();
 
   const safeAvatarSrc = characterAssets.includes(payload.avatarSrc)
     ? payload.avatarSrc
@@ -1601,7 +1768,19 @@ const handleFieldInput = () => {
     randomizeNote.classList.add("is-hidden");
   }
   resetShareLink();
+  resetPredictionPanel();
   updateFields();
+};
+
+const handleRelationshipStatusChange = () => {
+  if (isInRelationship()) {
+    resetPartnerAnswers();
+    resetExperienceForCurrentRelationship();
+  } else {
+    resetPartnerAnswers();
+    resetExperienceForSingle();
+  }
+  handleFieldInput();
 };
 
 const showRandomizeNote = () => {
@@ -1615,22 +1794,38 @@ Object.values(fields).forEach(({ input }) => {
   input.addEventListener("input", handleFieldInput);
 });
 
-Object.values(listFields).forEach(({ input }) => {
-  input.addEventListener("input", handleFieldInput);
-});
-
-skillsInput.addEventListener("input", handleFieldInput);
-linkedinInput.addEventListener("input", handleFieldInput);
-githubInput.addEventListener("input", handleFieldInput);
-websiteInput.addEventListener("input", handleFieldInput);
-instagramInput.addEventListener("input", handleFieldInput);
-if (bannerLinkSelect) {
-  bannerLinkSelect.addEventListener("change", handleFieldInput);
+if (relationshipStatusInput) {
+  relationshipStatusInput.addEventListener("change", handleRelationshipStatusChange);
 }
+if (relationshipStatusGroup) {
+  relationshipStatusGroup.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-value]");
+    if (!button || !relationshipStatusInput) {
+      return;
+    }
+    const value = button.dataset.value === "yes" ? "yes" : "no";
+    if (relationshipStatusInput.value === value) {
+      return;
+    }
+    relationshipStatusInput.value = value;
+    handleRelationshipStatusChange();
+  });
+}
+if (partnerFrequencyInput) {
+  partnerFrequencyInput.addEventListener("input", handleFieldInput);
+}
+if (partnerGoalsInput) {
+  partnerGoalsInput.addEventListener("input", handleFieldInput);
+}
+if (partnerLowEffortInput) {
+  partnerLowEffortInput.addEventListener("input", handleFieldInput);
+}
+
 
 if (randomizeButton) {
   randomizeButton.addEventListener("click", () => {
     resetShareLink();
+    resetPredictionPanel();
     randomizeProfile();
     showRandomizeNote();
   });
@@ -1639,6 +1834,7 @@ if (randomizeButton) {
 if (randomizeResumeButton) {
   randomizeResumeButton.addEventListener("click", () => {
     resetShareLink();
+    resetPredictionPanel();
     randomizeProfile();
     showRandomizeNote();
   });
@@ -1712,16 +1908,39 @@ if (copyShareUrlButton) {
   });
 }
 
+if (predictButton) {
+  predictButton.addEventListener("click", () => {
+    if (!predictionPanel || !predictionText) {
+      return;
+    }
+    updateFields();
+    predictionValue = buildPredictionText();
+    updatePredictionDisplay();
+    predictionPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+}
+
+if (predictionCloseButton) {
+  predictionCloseButton.addEventListener("click", () => {
+    resetPredictionPanel();
+  });
+}
+
 addExperienceButton.addEventListener("click", () => {
+  if (isInRelationship()) {
+    return;
+  }
   relationshipCounter = experienceList.querySelectorAll(".experience-card").length;
   const card = createExperienceCard();
   experienceList.prepend(card);
   resetShareLink();
+  resetPredictionPanel();
   updateFields();
 });
 
 experienceList.addEventListener("input", (event) => {
   resetShareLink();
+  resetPredictionPanel();
   if (event.target.matches('[data-field="appName"]')) {
     const card = event.target.closest(".experience-card");
     const appOther = card.querySelector('[data-field="appOther"]');
@@ -1743,6 +1962,7 @@ experienceList.addEventListener("input", (event) => {
 
 experienceList.addEventListener("change", (event) => {
   resetShareLink();
+  resetPredictionPanel();
   if (event.target.matches('[data-field="appUsed"]')) {
     const card = event.target.closest(".experience-card");
     const appFields = card.querySelector("[data-app-fields]");
@@ -1794,6 +2014,7 @@ experienceList.addEventListener("click", (event) => {
       }
     });
     resetShareLink();
+    resetPredictionPanel();
     updateFields();
     return;
   }
@@ -1807,6 +2028,7 @@ experienceList.addEventListener("click", (event) => {
     roleList.prepend(createRoleCard(card.dataset.relationshipId, nextRole));
     updateAppLabel(card);
     resetShareLink();
+    resetPredictionPanel();
     updateFields();
     return;
   }
@@ -1825,6 +2047,7 @@ experienceList.addEventListener("click", (event) => {
     syncRoleCardIds(card);
     card.dataset.roleCount = String(card.querySelectorAll(".role-card").length);
     resetShareLink();
+    resetPredictionPanel();
     updateFields();
   }
 });
