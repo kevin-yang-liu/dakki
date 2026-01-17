@@ -1186,6 +1186,13 @@ body.shared-view #share-link-error {
   }
 }
 
+@media (max-width: 520px) {
+  .field-group,
+  .field-group.two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
