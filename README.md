@@ -1,2 +1,2 @@
 ## Dakki
-### Dating profile for techies 🧑‍💻👩‍💻
+### Website that predicts your relationship status by the end of this year
