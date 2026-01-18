@@ -122,7 +122,6 @@ let randomizeNoteDismissed = false;
 let predictionValue = "";
 let predictionTimers = [];
 let predictionInProgress = false;
-let predictionSuppress = false;
 
 const monthMap = {
   jan: 0,
@@ -1206,7 +1205,7 @@ const getPredictionContext = () => {
   };
 };
 
-const buildPredictionText = () => {
+const buildPredictionTextLocal = () => {
   const context = getPredictionContext();
   const payload = JSON.stringify({
     name: context.name,
@@ -1217,35 +1216,52 @@ const buildPredictionText = () => {
     age: context.age,
   });
   const seed = hashString(payload);
+  const partnerLabel = context.interestedLabel === "partner"
+    ? "partner"
+    : context.interestedLabel;
+  const normalizePartnerLabel = (label) => {
+    const lowered = label.toLowerCase();
+    if (lowered.includes("nonbinary")) {
+      return "a past nonbinary person";
+    }
+    if (lowered.includes("woman")) {
+      return "a past woman";
+    }
+    if (lowered.includes("man") && !lowered.includes("woman")) {
+      return "a past man";
+    }
+    return label;
+  };
+
   const pastPartners = context.pastPartners.length
-    ? context.pastPartners
-    : [`a past ${context.interestedLabel}`];
+    ? context.pastPartners.map(normalizePartnerLabel)
+    : [`a past ${partnerLabel}`];
   const pickPastPartner = (seedOffset) => pickFromList(pastPartners, seed + seedOffset);
   const primaryPast = pickPastPartner(3);
   const secondaryPast = pickPastPartner(7);
 
   const coreOutcomes = [
     `sparking up a relationship with ${primaryPast} and keeping it low-key`,
-    `catching feelings for a new ${context.interestedLabel} from your friend group`,
+    `catching feelings for a new ${partnerLabel} from your friend group`,
     `rekindling with ${primaryPast} before realizing ${secondaryPast} is the real plot twist`,
-    `going from "single era" to talking stage with a bold ${context.interestedLabel} you meet at a cafe`,
+    `going from "single era" to talking stage with a bold ${partnerLabel} you meet at a cafe`,
     `getting back together with ${primaryPast} and then leveling up to cohabitation`,
     `staying single for a minute, then meeting ${secondaryPast} who shifts everything`,
     `starting a situationship with ${primaryPast} that unexpectedly turns into marriage`,
     `ghosting ${primaryPast} and then getting a sincere apology that restarts the story`,
-    `meeting a new ${context.interestedLabel} through work and calling it official by fall`,
-    `going viral on a dating app and landing a serious relationship with a new ${context.interestedLabel}`,
+    `meeting a new ${partnerLabel} through work and calling it official by fall`,
+    `going viral on a dating app and landing a serious relationship with a new ${partnerLabel}`,
     `deciding to go no-contact, then bumping into ${primaryPast} at a wedding`,
     `unlocking a slow-burn romance with ${secondaryPast} after months of "just friends"`,
     `choosing ${primaryPast} for real after a messy almost-thing`,
-    `getting engaged to a new ${context.interestedLabel} after a chaotic group trip`,
-    `finding a new ${context.interestedLabel} who feels like home and moving in together`,
-    `meeting a long-distance ${context.interestedLabel} who makes the distance feel easy`,
-    `dating a new ${context.interestedLabel} and meeting each other's families by winter`,
+    `getting engaged to a new ${partnerLabel} after a chaotic group trip`,
+    `finding a new ${partnerLabel} who feels like home and moving in together`,
+    `meeting a long-distance ${partnerLabel} who makes the distance feel easy`,
+    `dating a new ${partnerLabel} and meeting each other's families by winter`,
     `landing a joyful, steady relationship with ${secondaryPast} that turns into marriage`,
     `rekindling with ${primaryPast} and becoming each other's favorite person`,
-    `meeting a new ${context.interestedLabel} through a hobby and calling it official fast`,
-    `finding your forever ${context.interestedLabel} after a tiny DM that changes everything`,
+    `meeting a new ${partnerLabel} through a hobby and calling it official fast`,
+    `finding your forever ${partnerLabel} after a tiny DM that changes everything`,
   ];
 
   const flavorAdds = [
@@ -1271,9 +1287,45 @@ const buildPredictionText = () => {
       ? "Big energy forecast:"
       : "Soft launch forecast:";
 
-  const sentence = `${intensityTag} By the end of 2026, you're ${outcome} ${flavor}`;
+  const sentence = `${intensityTag} By the start of 2027, you're ${outcome} ${flavor}`;
   const withoutPeriod = sentence.replace(/\.\s*$/, "");
   return `${withoutPeriod} 🎉`;
+};
+
+const buildPredictionPayload = () => ({
+  fields: {
+    name: fields.name.input.value.trim(),
+    pronouns: fields.pronouns.input.value.trim(),
+    location: fields.location.input.value.trim(),
+    distance: fields.distance.input.value.trim(),
+    experienceYears: fields.experienceYears.input.value.trim(),
+    age: fields.age.input.value.trim(),
+    height: fields.height.input.value.trim(),
+    zodiac: fields.zodiac.input.value.trim(),
+    interestedIn: interestedInInput?.value.trim() || "",
+    relationshipStatus: relationshipStatusInput?.value || "no",
+    partnerFrequency: partnerFrequencyInput?.value.trim() || "",
+    partnerGoals: partnerGoalsInput?.value.trim() || "",
+    partnerLowEffort: partnerLowEffortInput?.value.trim() || "",
+  },
+  relationships: getRelationshipData(),
+});
+
+const fetchPredictionText = async () => {
+  try {
+    const response = await fetch("/predict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildPredictionPayload()),
+    });
+    if (!response.ok) {
+      return "";
+    }
+    const data = await response.json();
+    return typeof data.prediction === "string" ? data.prediction : "";
+  } catch (error) {
+    return "";
+  }
 };
 
 const setCardData = (card, data) => {
@@ -1519,10 +1571,13 @@ const resetPredictionPanel = () => {
   predictionText.textContent = "";
   predictionValue = "";
   predictionInProgress = false;
-  predictionSuppress = false;
   if (resumePredictionBlock && resumePredictionText) {
     resumePredictionBlock.classList.add("is-hidden");
     resumePredictionText.textContent = "";
+  }
+  if (predictButton) {
+    predictButton.classList.remove("is-hidden");
+    predictButton.disabled = false;
   }
 };
 
@@ -1537,30 +1592,22 @@ const updatePredictionDisplay = () => {
       resumePredictionBlock.classList.add("is-hidden");
       resumePredictionText.textContent = "";
     }
+    if (predictButton) {
+      predictButton.classList.remove("is-hidden");
+      predictButton.disabled = false;
+    }
     return;
   }
   predictionPanel.classList.remove("is-hidden");
   predictionText.textContent = predictionValue;
+  if (predictButton) {
+    predictButton.classList.add("is-hidden");
+    predictButton.disabled = true;
+  }
   if (resumePredictionBlock && resumePredictionText) {
     resumePredictionBlock.classList.remove("is-hidden");
     resumePredictionText.textContent = predictionValue;
   }
-};
-
-const updateShareLinkIfVisible = () => {
-  if (!shareLinkWrap || shareLinkWrap.classList.contains("is-hidden")) {
-    return;
-  }
-  revealShareLink();
-};
-
-const suppressPredictionDisplay = () => {
-  if (!predictionPanel || !predictionText || !predictionInProgress) {
-    return;
-  }
-  predictionSuppress = true;
-  predictionPanel.classList.add("is-hidden");
-  predictionText.textContent = "";
 };
 
 const runPredictionSequence = () => {
@@ -1583,7 +1630,7 @@ const runPredictionSequence = () => {
   const seed = hashString(JSON.stringify(context));
   const loadingPool = [
     "Warming up the duck-powered neural net...",
-    "Consulting the zodiac API (and a magic 8-ball)...",
+    "Consulting the zodiac API...",
     "Compiling your love story into bytecode...",
     "Running sentiment analysis on your playlist...",
     "Cross-referencing your vibe with cosmic weather...",
@@ -1615,17 +1662,33 @@ const runPredictionSequence = () => {
 
   predictionTimers.push(
     window.setTimeout(() => {
-      predictionValue = buildPredictionText();
-      predictionInProgress = false;
-      updatePredictionDisplay();
-      if (getShareLinkButton) {
-        getShareLinkButton.classList.remove("is-hidden");
-        getShareLinkButton.disabled = false;
-      }
-      if (downloadButtonPreview) {
-        downloadButtonPreview.classList.remove("is-hidden");
-        downloadButtonPreview.disabled = false;
-      }
+      fetchPredictionText()
+        .then((remotePrediction) => {
+          predictionValue = remotePrediction || buildPredictionTextLocal();
+          predictionInProgress = false;
+          updatePredictionDisplay();
+          if (getShareLinkButton) {
+            getShareLinkButton.classList.remove("is-hidden");
+            getShareLinkButton.disabled = false;
+          }
+          if (downloadButtonPreview) {
+            downloadButtonPreview.classList.remove("is-hidden");
+            downloadButtonPreview.disabled = false;
+          }
+        })
+        .catch(() => {
+          predictionValue = buildPredictionTextLocal();
+          predictionInProgress = false;
+          updatePredictionDisplay();
+          if (getShareLinkButton) {
+            getShareLinkButton.classList.remove("is-hidden");
+            getShareLinkButton.disabled = false;
+          }
+          if (downloadButtonPreview) {
+            downloadButtonPreview.classList.remove("is-hidden");
+            downloadButtonPreview.disabled = false;
+          }
+        });
     }, messages.length * delayMs)
   );
 };
@@ -1989,7 +2052,6 @@ if (shareLinkedInButton) {
 
 if (getShareLinkButton) {
   getShareLinkButton.addEventListener("click", () => {
-    suppressPredictionDisplay();
     removeUploadedPhotoForShare();
     setShareLinkErrorVisible(false);
     const url = revealShareLink();
@@ -2186,14 +2248,12 @@ const handleDownload = () => {
 
 if (downloadButton) {
   downloadButton.addEventListener("click", () => {
-    suppressPredictionDisplay();
     handleDownload();
   });
 }
 
 if (downloadButtonPreview) {
   downloadButtonPreview.addEventListener("click", () => {
-    suppressPredictionDisplay();
     handleDownload();
   });
 }

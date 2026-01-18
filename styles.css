@@ -310,16 +310,15 @@ small {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
-  bottom: 0;
+  position: static;
   background: var(--card);
   z-index: 3;
   padding: 10px 0 4px;
   gap: 10px;
-  opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
-  transition: opacity 220ms ease, transform 220ms ease;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition: none;
 }
 
 .prediction-actions {
@@ -334,7 +333,7 @@ small {
 
 .preview-actions.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: none;
   pointer-events: auto;
 }
 
@@ -728,6 +727,10 @@ body.shared-view .prediction-close {
 
   .resume-block {
     padding: 6px 12px;
+  }
+
+  .prediction-block {
+    margin-top: -6px;
   }
 }
 
